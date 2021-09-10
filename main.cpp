@@ -36,6 +36,7 @@ double calc_ratio(double target, double current) {
     if (current < -70) {
         return 1;
     }
+    // 把两个lufs转为一个系数
     return std::pow(10, (target - std::max(-70.0, current)) / 20);
 }
 
@@ -90,8 +91,6 @@ int main(int argc, char * argv[])
 
     long current_chunk = 0;
 
-    cout << "size:" << SAMPLES *sizeof(float) << "int:" << PCM_BUFFER_SIZE * sizeof(char) << endl;
-
     SDL_PauseAudio(0);
 
     auto pcm_buffer = std::array<char, PCM_BUFFER_SIZE>();
@@ -109,8 +108,10 @@ int main(int argc, char * argv[])
         auto ratio = calc_ratio(TARGET_LOUDNESS, fixed_by == INTEGRATED ? loudness.integrated : loudness.shortterm);
 
         if (current_chunk >= START_CHUNK && fixed_by == INTEGRATED) {
-            // 为了intergrated稳定，先算10帧
+            // 为了intergrated稳定，先算START_CHUNK帧
+            // 避免音量忽大忽小
             for (float & i : float_buffer) {
+                // TODO: true peak and limiter
                 i = ratio * i;
             }
         }
